@@ -1,2 +1,2 @@
 # techofficesolutions
-Complete inventory for office
+A complete web based tech solution
