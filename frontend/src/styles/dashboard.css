@@ -1,0 +1,55 @@
+/* Dashboard root variables */
+.dashboard-root {
+  --sidebar-width: 16rem;
+  --sidebar-width-icon: 3rem;
+}
+
+/* Sector badge and icon color utilities */
+.sector-badge {
+}
+
+/* Define per-sector background and icon colors using the same HSL values */
+.sector-hospitality .sector-badge,
+.sector-hospitality .sector-icon {
+}
+.sector-hospitality .sector-badge {
+  background-color: hsl(340 75% 55% / 0.1);
+}
+.sector-hospitality .sector-icon {
+  color: hsl(340 75% 55%);
+}
+
+.sector-commerce .sector-badge {
+  background-color: hsl(142 70% 45% / 0.1);
+}
+.sector-commerce .sector-icon {
+  color: hsl(142 70% 45%);
+}
+
+.sector-tourism .sector-badge {
+  background-color: hsl(200 85% 50% / 0.1);
+}
+.sector-tourism .sector-icon {
+  color: hsl(200 85% 50%);
+}
+
+.sector-health .sector-badge {
+  background-color: hsl(155 65% 48% / 0.1);
+}
+.sector-health .sector-icon {
+  color: hsl(155 65% 48%);
+}
+
+.sector-agriculture .sector-badge {
+  background-color: hsl(85 60% 50% / 0.1);
+}
+.sector-agriculture .sector-icon {
+  color: hsl(85 60% 50%);
+}
+
+.sector-others .sector-badge {
+  background-color: hsl(270 50% 55% / 0.1);
+}
+.sector-others .sector-icon {
+  color: hsl(270 50% 55%);
+}

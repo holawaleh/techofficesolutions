@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { StaffManagement } from "./StaffManagement";
 import { SectorDashboard } from "./SectorDashboard";
+import "@/styles/dashboard.css";
 
 const sectorIcons = {
   hospitality: Building2,
@@ -69,13 +70,8 @@ export function Dashboard({
   const [activeView, setActiveView] = useState<string>(interests[0] || "overview");
   const [isSuperuser] = useState(true);
 
-  const style = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
-
   return (
-    <SidebarProvider style={style as React.CSSProperties}>
+    <SidebarProvider className="dashboard-root">
       <div className="flex h-screen w-full">
         <Sidebar>
           <SidebarHeader className="p-4 border-b">
@@ -117,7 +113,7 @@ export function Dashboard({
                           isActive={activeView === interest}
                           data-testid={`button-nav-${interest}`}
                         >
-                          <Icon className="h-4 w-4" style={{ color: `hsl(${color})` }} />
+                          <Icon className="h-4 w-4 sector-icon" />
                           <span>{sectorNames[interest as keyof typeof sectorNames]}</span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -193,16 +189,11 @@ export function Dashboard({
                       <button
                         key={interest}
                         onClick={() => setActiveView(interest)}
-                        className="p-6 rounded-lg border bg-card hover-elevate text-left"
+                        className={`p-6 rounded-lg border bg-card hover-elevate text-left sector-${interest}`}
                         data-testid={`card-overview-${interest}`}
                       >
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center mb-3"
-                          style={{
-                            backgroundColor: `hsl(${color} / 0.1)`,
-                          }}
-                        >
-                          <Icon className="h-5 w-5" style={{ color: `hsl(${color})` }} />
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 sector-badge">
+                          <Icon className="h-5 w-5 sector-icon" />
                         </div>
                         <h3 className="font-semibold mb-1">
                           {sectorNames[interest as keyof typeof sectorNames]}

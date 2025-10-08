@@ -4,7 +4,11 @@ import { ThemeProvider } from "../ThemeProvider";
 export default function DashboardExample() {
   return (
     <ThemeProvider>
-      <Dashboard interests={["hospitality", "commerce", "tourism"]} />
+      <Dashboard
+        userId={"example-user-id"}
+        interests={["hospitality", "commerce", "tourism"]}
+        onLogout={() => console.log("logout")}
+      />
     </ThemeProvider>
   );
 }

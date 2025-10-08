@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 export default function LandingPageExample() {
   return (
     <ThemeProvider>
-      <LandingPage onGetStarted={() => console.log("Get started clicked")} />
+  <LandingPage onAuthSuccess={(user) => console.log("Auth success", user)} />
       <Toaster />
     </ThemeProvider>
   );
