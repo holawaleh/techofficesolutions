@@ -1,21 +1,39 @@
 {
   "compilerOptions": {
+    /* Basic strictness */
     "strict": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "strictNullChecks": true,
-    "strictFunctionTypes": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
+    /* Module system */
+    "module": "ESNext",
+    "target": "ES2020",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    /* React / JSX */
     "jsx": "react-jsx",
-    "target": "ESNext",
-    "module": "ESNext",
+    /* Paths and aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    /* Build & tooling */
     "noEmit": true,
-    "allowSyntheticDefaultImports": true
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    /* Optional lint friendliness */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ]
 }

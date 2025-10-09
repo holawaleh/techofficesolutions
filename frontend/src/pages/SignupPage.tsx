@@ -31,6 +31,7 @@ export default function SignupPage() {
   const [purposeOfUse, setPurposeOfUse] = useState<Array<PurposeOfUse>>([]);
   const [customPurpose, setCustomPurpose] = useState('');
 
+  // handle form changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -38,6 +39,7 @@ export default function SignupPage() {
     });
   };
 
+  // validate passwords, move to step 2
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -55,6 +57,7 @@ export default function SignupPage() {
     setStep(2);
   };
 
+  // main signup and auto-login logic
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -67,88 +70,64 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL as string) || 'https://techofficesolutions.onrender.com';
+      const BACKEND_URL =
+        import.meta.env.VITE_BACKEND_URL || 'https://techofficesolutions.onrender.com';
 
-      if (BACKEND_URL) {
-        // call Django signup; backend expects username, email, company, location, telephone, password
-        // build array of categories, mapping 'other' to custom text if given
-        const finalPurposeArray = purposeOfUse.map((p) => (p === 'other' ? customPurpose || 'other' : p));
+      const finalPurposeArray = purposeOfUse.map((p) =>
+        p === 'other' ? customPurpose || 'other' : p
+      );
 
-        const payload = {
-          username: formData.username,
-          email: formData.email,
-          company_name: formData.company,
-          address: formData.address,
-          phone_number: formData.telephone || '',
-          password: formData.password,
-          purpose_of_use: finalPurposeArray,
-        };
-        const res = await fetch(`${BACKEND_URL}/api/users/signup/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Signup failed');
-        // after successful signup, perform login to obtain tokens
-        const loginRes = await fetch(`${BACKEND_URL}/api/users/login/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: formData.email, password: formData.password }),
-        });
-        const loginData = await loginRes.json();
-        if (!loginRes.ok) throw new Error(loginData.detail || 'Login after signup failed');
-        localStorage.setItem('t_office_access', loginData.access);
-        localStorage.setItem('t_office_refresh', loginData.refresh);
-        localStorage.setItem('t_office_user', JSON.stringify(loginData.user));
-  // notify app about auth change so contexts update immediately
-  window.dispatchEvent(new Event('t_office_auth_changed'));
-        // optionally create company separately if you have an endpoint; for now frontend uses local state
-        navigate('/dashboard');
-        return;
-      }
-
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      const payload = {
+        username: formData.username,
         email: formData.email,
+        company_name: formData.company,
+        address: formData.address,
+        phone_number: formData.telephone || '',
         password: formData.password,
+        purpose_of_use: finalPurposeArray,
+      };
+
+      // ---- SIGNUP REQUEST ----
+      const res = await fetch(`${BACKEND_URL}/api/users/signup/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
 
-      if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error('User creation failed');
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Signup error:', data);
+        throw new Error(data.detail || JSON.stringify(data));
+      }
 
-      // build final purpose array for local stub insert
-      const finalPurposeArray = purposeOfUse.map((p) => (p === 'other' ? customPurpose || 'other' : p));
+      // ---- LOGIN REQUEST ----
+      const loginRes = await fetch(`${BACKEND_URL}/api/users/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username, // ✅ use username, not email
+          password: formData.password,
+        }),
+      });
 
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .insert({
-          name: formData.company,
-          address: formData.address,
-          purpose_of_use: finalPurposeArray,
-        })
-        .select()
-        .single();
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) {
+        console.error('Login error:', loginData);
+        throw new Error(loginData.detail || JSON.stringify(loginData));
+      }
 
-      if (companyError) throw companyError;
+      // ---- STORE TOKENS ----
+      localStorage.setItem('access_token', loginData.access);
+      localStorage.setItem('refresh_token', loginData.refresh);
+      localStorage.setItem('user', JSON.stringify(loginData.user));
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          username: formData.username,
-          email: formData.email,
-          company_id: companyData.id,
-          telephone: formData.telephone || '',
-          is_admin: true,
-        });
-
-      if (profileError) throw profileError;
+      // notify app contexts
+      window.dispatchEvent(new Event('t_office_auth_changed'));
 
       navigate('/dashboard');
+      return;
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      }
+      if (err instanceof Error) setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -160,7 +139,7 @@ export default function SignupPage() {
     { value: 'pharmacy', label: 'Pharmacy', icon: '💊' },
     { value: 'agriculture', label: 'Agriculture', icon: '🌾' },
     { value: 'tourism', label: 'Tourism', icon: '🧭' },
-  { value: 'technical_services', label: 'Technical Services', icon: '🛠️' },
+    { value: 'technical_services', label: 'Technical Services', icon: '🛠️' },
     { value: 'other', label: 'Other', icon: '✨' },
   ];
 
@@ -336,15 +315,12 @@ export default function SignupPage() {
                       key={option.value}
                       type="button"
                       onClick={() => {
-                        // toggle selection
                         setPurposeOfUse((prev) => {
                           const exists = prev.includes(option.value as PurposeOfUse);
                           if (exists) return prev.filter((p) => p !== option.value);
                           return [...prev, option.value as PurposeOfUse];
                         });
-                        if (option.value !== 'other') {
-                          setCustomPurpose('');
-                        }
+                        if (option.value !== 'other') setCustomPurpose('');
                       }}
                       className={`p-6 border-2 rounded-xl transition-all text-center hover:border-green-600 ${
                         purposeOfUse.includes(option.value as PurposeOfUse)
@@ -360,7 +336,10 @@ export default function SignupPage() {
 
                 {purposeOfUse.includes('other') && (
                   <div>
-                    <label htmlFor="customPurpose" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="customPurpose"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Please specify
                     </label>
                     <input
@@ -378,7 +357,11 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={
-                    loading || purposeOfUse.length === 0 || (purposeOfUse.includes('other') && purposeOfUse.length === 1 && !customPurpose)
+                    loading ||
+                    purposeOfUse.length === 0 ||
+                    (purposeOfUse.includes('other') &&
+                      purposeOfUse.length === 1 &&
+                      !customPurpose)
                   }
                   className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
