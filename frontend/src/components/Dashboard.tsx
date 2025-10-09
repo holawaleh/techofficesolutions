@@ -1,218 +1,215 @@
-import { useState } from "react";
+import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Building2,
+  LogOut,
+  Users,
+  Hotel,
   ShoppingBag,
-  Globe,
+  Plane,
   Heart,
   Sprout,
-  MoreHorizontal,
-  Users,
+  FolderOpen,
   Settings,
-  LogOut,
-  BarChart3,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "./ThemeToggle";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarFooter,
-} from "@/components/ui/sidebar";
-import { StaffManagement } from "./StaffManagement";
-import { SectorDashboard } from "./SectorDashboard";
-import "@/styles/dashboard.css";
+  Menu,
+  X
+} from 'lucide-react';
+import StaffManagement from './StaffManagement';
 
-const sectorIcons = {
-  hospitality: Building2,
-  commerce: ShoppingBag,
-  tourism: Globe,
-  health: Heart,
-  agriculture: Sprout,
-  others: MoreHorizontal,
+const AREA_CONFIG = {
+  hospitality: { icon: Hotel, color: 'emerald', label: 'Hospitality' },
+  commerce: { icon: ShoppingBag, color: 'blue', label: 'Commerce' },
+  tourism: { icon: Plane, color: 'cyan', label: 'Tourism' },
+  health: { icon: Heart, color: 'red', label: 'Health' },
+  agriculture: { icon: Sprout, color: 'green', label: 'Agriculture' },
+  others: { icon: FolderOpen, color: 'slate', label: 'Others' },
 };
 
-const sectorColors = {
-  hospitality: "340 75% 55%",
-  commerce: "142 70% 45%",
-  tourism: "200 85% 50%",
-  health: "155 65% 48%",
-  agriculture: "85 60% 50%",
-  others: "270 50% 55%",
-};
+export default function Dashboard() {
+  const { user, logout } = useAuth();
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [showStaffManagement, setShowStaffManagement] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-const sectorNames = {
-  hospitality: "Hospitality",
-  commerce: "Commerce",
-  tourism: "Tourism",
-  health: "Health",
-  agriculture: "Agriculture",
-  others: "Others",
-};
+  if (!user) return null;
 
-export function Dashboard({ 
-  userId, 
-  interests, 
-  onLogout 
-}: { 
-  userId: string;
-  interests: string[];
-  onLogout: () => void;
-}) {
-  const [activeView, setActiveView] = useState<string>(interests[0] || "overview");
-  const [isSuperuser] = useState(true);
+  const userAreas = user.areas_of_interest || [];
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  if (showStaffManagement) {
+    return <StaffManagement onBack={() => setShowStaffManagement(false)} />;
+  }
 
   return (
-    <SidebarProvider className="dashboard-root">
-      <div className="flex h-screen w-full">
-        <Sidebar>
-          <SidebarHeader className="p-4 border-b">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              <span className="font-bold">TechOffice</span>
-            </div>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Main</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveView("overview")}
-                      isActive={activeView === "overview"}
-                      data-testid="button-nav-overview"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>Overview</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Your Sectors</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {interests.map((interest) => {
-                    const Icon = sectorIcons[interest as keyof typeof sectorIcons];
-                    const color = sectorColors[interest as keyof typeof sectorColors];
-                    return (
-                      <SidebarMenuItem key={interest}>
-                        <SidebarMenuButton
-                          onClick={() => setActiveView(interest)}
-                          isActive={activeView === interest}
-                          data-testid={`button-nav-${interest}`}
-                        >
-                          <Icon className="h-4 w-4 sector-icon" />
-                          <span>{sectorNames[interest as keyof typeof sectorNames]}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            {isSuperuser && (
-              <SidebarGroup>
-                <SidebarGroupLabel>Admin</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        onClick={() => setActiveView("staff")}
-                        isActive={activeView === "staff"}
-                        data-testid="button-nav-staff"
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>Staff Management</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
-          </SidebarContent>
-          <SidebarFooter className="p-4 border-t">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton data-testid="button-nav-settings">
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={onLogout} data-testid="button-nav-logout">
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
-
-        <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <h1 className="text-xl font-semibold">
-                {activeView === "overview"
-                  ? "Overview"
-                  : activeView === "staff"
-                  ? "Staff Management"
-                  : sectorNames[activeView as keyof typeof sectorNames]}
-              </h1>
-            </div>
-            <ThemeToggle />
-          </header>
-
-          <main className="flex-1 overflow-auto p-6">
-            {activeView === "staff" ? (
-              <StaffManagement userId={userId} />
-            ) : activeView === "overview" ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {interests.map((interest) => {
-                    const Icon = sectorIcons[interest as keyof typeof sectorIcons];
-                    const color = sectorColors[interest as keyof typeof sectorColors];
-                    return (
-                      <button
-                        key={interest}
-                        onClick={() => setActiveView(interest)}
-                        className={`p-6 rounded-lg border bg-card hover-elevate text-left sector-${interest}`}
-                        data-testid={`card-overview-${interest}`}
-                      >
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 sector-badge">
-                          <Icon className="h-5 w-5 sector-icon" />
-                        </div>
-                        <h3 className="font-semibold mb-1">
-                          {sectorNames[interest as keyof typeof sectorNames]}
-                        </h3>
-                        <p className="text-2xl font-bold">
-                          {Math.floor(Math.random() * 100) + 1}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Active items</p>
-                      </button>
-                    );
-                  })}
-                </div>
+    <div className="min-h-screen bg-slate-50">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <Building2 className="w-8 h-8 text-emerald-500" />
+              <div>
+                <div className="font-bold text-slate-900">{user.company_name}</div>
+                <div className="text-xs text-slate-500">{user.username}</div>
               </div>
-            ) : (
-              <SectorDashboard sector={activeView} />
-            )}
-          </main>
+            </div>
+
+            <div className="hidden md:flex items-center gap-4">
+              <button
+                onClick={() => setShowStaffManagement(true)}
+                className="flex items-center gap-2 px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                <span className="font-medium">Staff Management</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t border-slate-200 py-4 space-y-2">
+              <button
+                onClick={() => {
+                  setShowStaffManagement(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                <span className="font-medium">Staff Management</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
+          )}
         </div>
+      </nav>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            Welcome back, {user.username}
+          </h1>
+          <p className="text-slate-600">
+            Manage your business operations across your selected industries
+          </p>
+        </div>
+
+        {userAreas.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-slate-200">
+            <Settings className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+              No Areas of Interest Selected
+            </h3>
+            <p className="text-slate-600">
+              Please contact support to update your areas of interest
+            </p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {userAreas.map((areaId) => {
+              const config = AREA_CONFIG[areaId as keyof typeof AREA_CONFIG];
+              if (!config) return null;
+
+              const Icon = config.icon;
+              const isActive = activeSection === areaId;
+
+              return (
+                <button
+                  key={areaId}
+                  onClick={() => setActiveSection(isActive ? null : areaId)}
+                  className={`bg-white rounded-xl p-6 border-2 transition-all text-left hover:shadow-lg ${
+                    isActive
+                      ? `border-${config.color}-500 shadow-md`
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-lg bg-${config.color}-500/10 flex items-center justify-center mb-4`}
+                  >
+                    <Icon className={`w-6 h-6 text-${config.color}-600`} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">{config.label}</h3>
+                  <p className="text-slate-600 text-sm">
+                    Manage your {config.label.toLowerCase()} operations and data
+                  </p>
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-500">Quick Actions</span>
+                      <span className={`text-${config.color}-600 font-semibold`}>
+                        {isActive ? 'Hide' : 'View'} →
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {activeSection && (
+          <div className="mt-8 bg-white rounded-xl p-8 shadow-sm border border-slate-200">
+            <div className="flex items-center gap-3 mb-6">
+              {(() => {
+                const config = AREA_CONFIG[activeSection as keyof typeof AREA_CONFIG];
+                const Icon = config.icon;
+                return (
+                  <>
+                    <div
+                      className={`w-10 h-10 rounded-lg bg-${config.color}-500/10 flex items-center justify-center`}
+                    >
+                      <Icon className={`w-5 h-5 text-${config.color}-600`} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900">{config.label} Dashboard</h2>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-slate-50 rounded-lg p-6">
+                <div className="text-3xl font-bold text-slate-900 mb-1">0</div>
+                <div className="text-slate-600 text-sm">Total Records</div>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-6">
+                <div className="text-3xl font-bold text-slate-900 mb-1">0</div>
+                <div className="text-slate-600 text-sm">Active Items</div>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-6">
+                <div className="text-3xl font-bold text-slate-900 mb-1">0</div>
+                <div className="text-slate-600 text-sm">Pending Tasks</div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-6 bg-slate-50 rounded-lg border border-slate-200">
+              <p className="text-slate-600 text-center">
+                Your {AREA_CONFIG[activeSection as keyof typeof AREA_CONFIG].label.toLowerCase()} data will appear here.
+                Start by adding your first entry.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
-    </SidebarProvider>
+    </div>
   );
 }

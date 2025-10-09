@@ -1,42 +1,21 @@
 {
-  "include": [
-    "src/**/*",
-    "vite.config.ts",
-    "shared/**/*",
-    "server/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "build",
-    "dist",
-    "**/*.test.ts"
-  ],
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
-    "noEmit": true,
-    "module": "ESNext",
     "strict": true,
-    "lib": [
-      "esnext",
-      "dom",
-      "dom.iterable"
-    ],
-    "jsx": "preserve",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
     "forceConsistentCasingInFileNames": true,
-    "allowImportingTsExtensions": true,
-    "moduleResolution": "bundler",
-    "baseUrl": ".",
-    "types": [],
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@shared/*": [
-        "./shared/*"
-      ]
-    }
-  }
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "target": "ESNext",
+    "module": "ESNext",
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "src"
+  ]
 }

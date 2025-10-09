@@ -1,403 +1,491 @@
-import { useState } from "react";
-import { Plus, MoreVertical, UserCheck, UserX, Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+  ArrowLeft,
+  UserPlus,
+  Search,
+  Edit2,
+  Trash2,
+  Shield,
+  Check,
+  X,
+  Loader2
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import type { StaffMember } from '../types/auth';
 
-type StaffMember = {
-  id: string;
-  superuserId: string;
-  name: string;
-  email: string;
-  role: string;
-  canEdit: boolean;
-  canDelete: boolean;
-  isAdmin: boolean;
-  createdAt?: string;
-};
+interface StaffManagementProps {
+  onBack: () => void;
+}
 
-export function StaffManagement({ userId }: { userId: string }) {
-  const [addStaffOpen, setAddStaffOpen] = useState(false);
+export default function StaffManagement({ onBack }: StaffManagementProps) {
+  const { user } = useAuth();
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
-  const [newStaff, setNewStaff] = useState({
-    name: "",
-    email: "",
-    role: "Viewer",
-  });
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data: staff = [], isLoading } = useQuery<StaffMember[]>({
-    queryKey: ["/api/staff", userId],
-    queryFn: () => fetch(`/api/staff/${userId}`).then((res) => res.json()),
-  });
-
-  const createStaffMutation = useMutation({
-    mutationFn: (data: any) =>
-      apiRequest("POST", "/api/staff", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/staff", userId] });
-      setAddStaffOpen(false);
-      setNewStaff({ name: "", email: "", role: "Viewer" });
-      toast({
-        title: "Staff member added",
-        description: "The new staff member has been added successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to add staff member",
-        variant: "destructive",
-      });
-    },
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    can_edit: false,
+    can_delete: false,
+    special_privileges: [] as string[],
   });
 
-  const updateStaffMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest("PATCH", `/api/staff/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/staff", userId] });
-      toast({
-        title: "Permissions updated",
-        description: "Staff permissions have been updated successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update permissions",
-        variant: "destructive",
-      });
-    },
-  });
+  useEffect(() => {
+    loadStaffMembers();
+  }, []);
 
-  const deleteStaffMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiRequest("DELETE", `/api/staff/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/staff", userId] });
-      toast({
-        title: "Staff member removed",
-        description: "The staff member has been removed successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to remove staff member",
-        variant: "destructive",
-      });
-    },
-  });
+  const loadStaffMembers = async () => {
+    setIsLoading(true);
+    try {
+      const mockStaff: StaffMember[] = [];
+      setStaffMembers(mockStaff);
+    } catch (error) {
+      console.error('Failed to load staff:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handleAddStaff = () => {
-    if (!newStaff.name || !newStaff.email) return;
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-    createStaffMutation.mutate({
-      superuserId: userId,
-      name: newStaff.name,
-      email: newStaff.email,
-      role: newStaff.role,
-      canEdit: false,
-      canDelete: false,
-      isAdmin: false,
+    try {
+      const newStaff: StaffMember = {
+        id: Date.now(),
+        username: formData.username,
+        email: formData.email,
+        can_edit: formData.can_edit,
+        can_delete: formData.can_delete,
+        special_privileges: formData.special_privileges,
+        created_at: new Date().toISOString(),
+      };
+
+      setStaffMembers([...staffMembers, newStaff]);
+      setShowAddForm(false);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to add staff:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+
+    setIsLoading(true);
+    try {
+      const updatedStaff = staffMembers.map((staff) =>
+        staff.id === editingStaff.id
+          ? {
+              ...staff,
+              can_edit: formData.can_edit,
+              can_delete: formData.can_delete,
+              special_privileges: formData.special_privileges,
+            }
+          : staff
+      );
+
+      setStaffMembers(updatedStaff);
+      setEditingStaff(null);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to update staff:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteStaff = async (staffId: number) => {
+    if (!confirm('Are you sure you want to remove this staff member?')) return;
+
+    setIsLoading(true);
+    try {
+      setStaffMembers(staffMembers.filter((staff) => staff.id !== staffId));
+    } catch (error) {
+      console.error('Failed to delete staff:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startEdit = (staff: StaffMember) => {
+    setEditingStaff(staff);
+    setFormData({
+      username: staff.username,
+      email: staff.email,
+      password: '',
+      can_edit: staff.can_edit,
+      can_delete: staff.can_delete,
+      special_privileges: staff.special_privileges,
     });
   };
 
-  const handleRemoveStaff = (id: string) => {
-    deleteStaffMutation.mutate(id);
-  };
-
-  const handleUpdatePermission = (
-    id: string,
-    field: "canEdit" | "canDelete" | "isAdmin",
-    value: boolean
-  ) => {
-    updateStaffMutation.mutate({
-      id,
-      data: { [field]: value },
+  const resetForm = () => {
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      can_edit: false,
+      can_delete: false,
+      special_privileges: [],
     });
+    setShowAddForm(false);
+    setEditingStaff(null);
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  const togglePrivilege = (privilege: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      special_privileges: prev.special_privileges.includes(privilege)
+        ? prev.special_privileges.filter((p) => p !== privilege)
+        : [...prev.special_privileges, privilege],
+    }));
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading staff...</p>
-      </div>
-    );
-  }
+  const filteredStaff = staffMembers.filter(
+    (staff) =>
+      staff.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      staff.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const PRIVILEGE_OPTIONS = [
+    'Manage Reports',
+    'View Analytics',
+    'Export Data',
+    'Manage Settings',
+    'Access All Sections',
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Staff Management</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage team members and their permissions
-          </p>
-        </div>
-        <Button onClick={() => setAddStaffOpen(true)} data-testid="button-add-staff">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Staff
-        </Button>
-      </div>
-
-      {staff.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No staff members yet. Add your first team member to get started.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {staff.map((member) => (
-            <div
-              key={member.id}
-              className="p-6 rounded-lg border bg-card"
-              data-testid={`card-staff-${member.id}`}
+    <div className="min-h-screen bg-slate-50">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-slate-700 hover:text-slate-900 font-medium"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold" data-testid={`text-staff-name-${member.id}`}>
-                      {member.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      data-testid={`button-staff-menu-${member.id}`}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => setEditingStaff(member)}
-                      data-testid={`button-edit-staff-${member.id}`}
-                    >
-                      Edit Permissions
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleRemoveStaff(member.id)}
-                      className="text-destructive"
-                      data-testid={`button-remove-staff-${member.id}`}
-                    >
-                      Remove Staff
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <Badge variant="secondary" className="mb-4">
-                {member.role}
-              </Badge>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <UserCheck className="h-4 w-4 text-muted-foreground" />
-                    <span>Can Edit</span>
-                  </div>
-                  <Switch
-                    checked={member.canEdit}
-                    onCheckedChange={(checked) =>
-                      handleUpdatePermission(member.id, "canEdit", checked)
-                    }
-                    data-testid={`switch-edit-${member.id}`}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <UserX className="h-4 w-4 text-muted-foreground" />
-                    <span>Can Delete</span>
-                  </div>
-                  <Switch
-                    checked={member.canDelete}
-                    onCheckedChange={(checked) =>
-                      handleUpdatePermission(member.id, "canDelete", checked)
-                    }
-                    data-testid={`switch-delete-${member.id}`}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <span>Admin Rights</span>
-                  </div>
-                  <Switch
-                    checked={member.isAdmin}
-                    onCheckedChange={(checked) =>
-                      handleUpdatePermission(member.id, "isAdmin", checked)
-                    }
-                    data-testid={`switch-admin-${member.id}`}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <Dialog open={addStaffOpen} onOpenChange={setAddStaffOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Staff Member</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="staff-name">Full Name</Label>
-              <Input
-                id="staff-name"
-                value={newStaff.name}
-                onChange={(e) =>
-                  setNewStaff((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="John Doe"
-                data-testid="input-staff-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="staff-email">Email</Label>
-              <Input
-                id="staff-email"
-                type="email"
-                value={newStaff.email}
-                onChange={(e) =>
-                  setNewStaff((prev) => ({ ...prev, email: e.target.value }))
-                }
-                placeholder="john@techoffice.com"
-                data-testid="input-staff-email"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="staff-role">Role</Label>
-              <Input
-                id="staff-role"
-                value={newStaff.role}
-                onChange={(e) =>
-                  setNewStaff((prev) => ({ ...prev, role: e.target.value }))
-                }
-                placeholder="Manager"
-                data-testid="input-staff-role"
-              />
+              <ArrowLeft className="w-5 h-5" />
+              Back to Dashboard
+            </button>
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-emerald-500" />
+              <span className="font-semibold text-slate-900">Superuser</span>
             </div>
           </div>
-          <DialogFooter className="mt-6">
-            <Button
-              variant="outline"
-              onClick={() => setAddStaffOpen(false)}
-              data-testid="button-cancel-staff"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddStaff}
-              disabled={!newStaff.name || !newStaff.email || createStaffMutation.isPending}
-              data-testid="button-save-staff"
-            >
-              {createStaffMutation.isPending ? "Adding..." : "Add Staff"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </nav>
 
-      {editingStaff && (
-        <Dialog
-          open={!!editingStaff}
-          onOpenChange={() => setEditingStaff(null)}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Permissions - {editingStaff.name}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-4">
-              <div className="flex items-center justify-between">
-                <Label>Can Edit</Label>
-                <Switch
-                  checked={editingStaff.canEdit}
-                  onCheckedChange={(checked) => {
-                    handleUpdatePermission(editingStaff.id, "canEdit", checked);
-                    setEditingStaff({
-                      ...editingStaff,
-                      canEdit: checked,
-                    });
-                  }}
-                  data-testid="switch-edit-permission"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label>Can Delete</Label>
-                <Switch
-                  checked={editingStaff.canDelete}
-                  onCheckedChange={(checked) => {
-                    handleUpdatePermission(editingStaff.id, "canDelete", checked);
-                    setEditingStaff({
-                      ...editingStaff,
-                      canDelete: checked,
-                    });
-                  }}
-                  data-testid="switch-delete-permission"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label>Admin Rights</Label>
-                <Switch
-                  checked={editingStaff.isAdmin}
-                  onCheckedChange={(checked) => {
-                    handleUpdatePermission(editingStaff.id, "isAdmin", checked);
-                    setEditingStaff({
-                      ...editingStaff,
-                      isAdmin: checked,
-                    });
-                  }}
-                  data-testid="switch-admin-permission"
-                />
-              </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Staff Management</h1>
+          <p className="text-slate-600">
+            Add, edit, and manage staff members and their permissions
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search staff by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              />
             </div>
-            <DialogFooter className="mt-6">
-              <Button
-                onClick={() => setEditingStaff(null)}
-                data-testid="button-close-edit"
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold transition-all whitespace-nowrap"
+            >
+              <UserPlus className="w-5 h-5" />
+              Add Staff
+            </button>
+          </div>
+        </div>
+
+        {(showAddForm || editingStaff) && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-slate-900">
+                {editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}
+              </h2>
+              <button
+                onClick={resetForm}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg"
               >
-                Done
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={editingStaff ? handleUpdateStaff : handleAddStaff}>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!!editingStaff}
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-slate-100"
+                    placeholder="staff.username"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    disabled={!!editingStaff}
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-slate-100"
+                    placeholder="staff@company.com"
+                  />
+                </div>
+
+                {!editingStaff && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                      placeholder="Create a password"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  Basic Permissions
+                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.can_edit}
+                      onChange={(e) => setFormData({ ...formData, can_edit: e.target.checked })}
+                      className="w-5 h-5 text-emerald-500 rounded focus:ring-emerald-500"
+                    />
+                    <div>
+                      <div className="font-medium text-slate-900">Can Edit</div>
+                      <div className="text-sm text-slate-600">
+                        Allow staff to edit existing records
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.can_delete}
+                      onChange={(e) =>
+                        setFormData({ ...formData, can_delete: e.target.checked })
+                      }
+                      className="w-5 h-5 text-emerald-500 rounded focus:ring-emerald-500"
+                    />
+                    <div>
+                      <div className="font-medium text-slate-900">Can Delete</div>
+                      <div className="text-sm text-slate-600">
+                        Allow staff to remove records permanently
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  Special Privileges
+                </label>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {PRIVILEGE_OPTIONS.map((privilege) => (
+                    <label
+                      key={privilege}
+                      className="flex items-center gap-2 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.special_privileges.includes(privilege)}
+                        onChange={() => togglePrivilege(privilege)}
+                        className="w-4 h-4 text-emerald-500 rounded focus:ring-emerald-500"
+                      />
+                      <span className="text-sm text-slate-700">{privilege}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      {editingStaff ? 'Updating...' : 'Adding...'}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5" />
+                      {editingStaff ? 'Update Staff' : 'Add Staff'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {isLoading && !showAddForm && !editingStaff ? (
+            <div className="p-12 text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-4" />
+              <p className="text-slate-600">Loading staff members...</p>
+            </div>
+          ) : filteredStaff.length === 0 ? (
+            <div className="p-12 text-center">
+              <UserPlus className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">No Staff Members</h3>
+              <p className="text-slate-600 mb-6">
+                {searchQuery
+                  ? 'No staff members match your search'
+                  : 'Get started by adding your first staff member'}
+              </p>
+              {!searchQuery && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold transition-all inline-flex items-center gap-2"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  Add First Staff Member
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">
+                      Staff Member
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">
+                      Permissions
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">
+                      Special Privileges
+                    </th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredStaff.map((staff) => (
+                    <tr key={staff.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="font-medium text-slate-900">{staff.username}</div>
+                          <div className="text-sm text-slate-600">{staff.email}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          {staff.can_edit && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                              Can Edit
+                            </span>
+                          )}
+                          {staff.can_delete && (
+                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded">
+                              Can Delete
+                            </span>
+                          )}
+                          {!staff.can_edit && !staff.can_delete && (
+                            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded">
+                              View Only
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {staff.special_privileges.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {staff.special_privileges.slice(0, 2).map((privilege) => (
+                              <span
+                                key={privilege}
+                                className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded"
+                              >
+                                {privilege}
+                              </span>
+                            ))}
+                            {staff.special_privileges.length > 2 && (
+                              <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded">
+                                +{staff.special_privileges.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-sm">None</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => startEdit(staff)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStaff(staff.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
