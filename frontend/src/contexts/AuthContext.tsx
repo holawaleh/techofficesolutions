@@ -2,13 +2,15 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { AuthService } from '../services/authService';
 import type { User, LoginPayload, SignupPayload } from '../types/auth';
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
+  profile: User | null;              // alias for convenience
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   signup: (payload: SignupPayload) => Promise<void>;
   logout: () => void;
+  signOut: () => void;               // alias for convenience
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,15 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  // ✅ Aliases for backward compatibility
+  const profile = user;
+  const signOut = logout;
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        profile,
         isAuthenticated: !!user,
         isLoading,
         login,
         signup,
         logout,
+        signOut,
       }}
     >
       {children}
@@ -56,8 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

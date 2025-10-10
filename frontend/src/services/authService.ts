@@ -1,120 +1,126 @@
 import type { LoginPayload, SignupPayload, AuthResponse, User } from '../types/auth';
 
-const API_BASE_URL = 'https://techofficesolutions.onrender.com/api/users';
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || 'https://techofficesolutions.onrender.com';
 
-export class AuthService {
-  private static getStoredTokens() {
-    return {
-      access: localStorage.getItem('access_token'),
-      refresh: localStorage.getItem('refresh_token')
-    };
-  }
-
-  private static setTokens(access: string, refresh: string) {
-    localStorage.setItem('access_token', access);
-    localStorage.setItem('refresh_token', refresh);
-  }
-
-  private static clearTokens() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-  }
-
-  static async signup(payload: SignupPayload): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/signup/`, {
+export const AuthService = {
+  /**
+   * 🔐 Login user
+   */
+  async login(payload: LoginPayload): Promise<AuthResponse> {
+    const response = await fetch(`${BACKEND_URL}/api/users/login/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Signup failed');
-    }
-
     const data = await response.json();
 
-    if (data.access && data.refresh) {
-      this.setTokens(data.access, data.refresh);
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
+    if (!response.ok) {
+      throw new Error(data.detail || 'Login failed');
     }
 
-    return data;
-  }
+    // ✅ Persist tokens and user in localStorage
+    localStorage.setItem('t_office_access', data.access);
+    localStorage.setItem('t_office_refresh', data.refresh);
+    localStorage.setItem('t_office_user', JSON.stringify(data.user));
+    window.dispatchEvent(new Event('t_office_auth_changed'));
 
-  static async login(payload: LoginPayload): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/login/`, {
+    return data as AuthResponse;
+  },
+
+  /**
+   * 🧾 Signup new user
+   */
+  async signup(payload: SignupPayload): Promise<AuthResponse> {
+    const response = await fetch(`${BACKEND_URL}/api/users/signup/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+      throw new Error(
+        data.detail ||
+          data.message ||
+          JSON.stringify(data) ||
+          'Signup failed'
+      );
     }
 
-    const data = await response.json();
-    this.setTokens(data.access, data.refresh);
-    localStorage.setItem('user', JSON.stringify(data.user));
-
-    return data;
-  }
-
-  static logout() {
-    this.clearTokens();
-  }
-
-  static getCurrentUser(): User | null {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) return null;
-
+    // ✅ Auto-login after successful signup
     try {
-      return JSON.parse(userStr);
+      const loginRes = await fetch(`${BACKEND_URL}/api/users/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: payload.username,
+          password: payload.password,
+        }),
+      });
+
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) {
+        throw new Error(loginData.detail || 'Auto-login failed');
+      }
+
+      localStorage.setItem('t_office_access', loginData.access);
+      localStorage.setItem('t_office_refresh', loginData.refresh);
+      localStorage.setItem('t_office_user', JSON.stringify(loginData.user));
+      window.dispatchEvent(new Event('t_office_auth_changed'));
+
+      return loginData as AuthResponse;
+    } catch (err) {
+      console.error('Signup succeeded but auto-login failed:', err);
+      return data as AuthResponse;
+    }
+  },
+
+  /**
+   * 🚪 Logout and clear session
+   */
+  logout() {
+    localStorage.removeItem('t_office_access');
+    localStorage.removeItem('t_office_refresh');
+    localStorage.removeItem('t_office_user');
+    window.dispatchEvent(new Event('t_office_auth_changed'));
+  },
+
+  /**
+   * ♻️ Retrieve currently logged-in user (from localStorage)
+   */
+  getCurrentUser(): User | null {
+    try {
+      const userJson = localStorage.getItem('t_office_user');
+      if (!userJson) return null;
+      return JSON.parse(userJson) as User;
     } catch {
       return null;
     }
-  }
+  },
 
-  static isAuthenticated(): boolean {
-    const tokens = this.getStoredTokens();
-    return !!(tokens.access && tokens.refresh);
-  }
+  /**
+   * 🔁 Refresh access token (optional helper)
+   */
+  async refreshAccessToken(): Promise<string | null> {
+    const refresh = localStorage.getItem('t_office_refresh');
+    if (!refresh) return null;
 
-  static getAccessToken(): string | null {
-    return this.getStoredTokens().access;
-  }
-
-  static async refreshToken(): Promise<string> {
-    const { refresh } = this.getStoredTokens();
-
-    if (!refresh) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/token/refresh/`, {
+    const response = await fetch(`${BACKEND_URL}/api/users/token/refresh/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh }),
     });
 
-    if (!response.ok) {
-      this.clearTokens();
-      throw new Error('Token refresh failed');
+    const data = await response.json();
+    if (!response.ok || !data.access) {
+      this.logout();
+      return null;
     }
 
-    const data = await response.json();
-    this.setTokens(data.access, refresh);
-
+    localStorage.setItem('t_office_access', data.access);
     return data.access;
-  }
-}
+  },
+};
