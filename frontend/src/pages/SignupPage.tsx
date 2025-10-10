@@ -104,10 +104,13 @@ export default function SignupPage() {
       const loginRes = await fetch(`${BACKEND_URL}/api/users/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+
         body: JSON.stringify({
-          username: formData.username, // ✅ use username, not email
-          password: formData.password,
-        }),
+  username: formData.username || formData.email,
+  password: formData.password,
+}),
+
+
       });
 
       const loginData = await loginRes.json();
