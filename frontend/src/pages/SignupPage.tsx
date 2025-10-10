@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { ArrowLeft, Building2 } from 'lucide-react';
 
 type PurposeOfUse =
@@ -31,7 +30,7 @@ export default function SignupPage() {
   const [purposeOfUse, setPurposeOfUse] = useState<Array<PurposeOfUse>>([]);
   const [customPurpose, setCustomPurpose] = useState('');
 
-  // handle form changes
+  // handle field updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -39,7 +38,7 @@ export default function SignupPage() {
     });
   };
 
-  // validate passwords, move to step 2
+  // validate before moving to step 2
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -57,12 +56,12 @@ export default function SignupPage() {
     setStep(2);
   };
 
-  // main signup and auto-login logic
+  // handle final submit — signup and store tokens
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!purposeOfUse || purposeOfUse.length === 0) {
+    if (!purposeOfUse.length) {
       setError('Please select at least one business category');
       return;
     }
@@ -88,49 +87,33 @@ export default function SignupPage() {
       };
 
       // ---- SIGNUP REQUEST ----
-      const res = await fetch(`${BACKEND_URL}/api/users/signup/`, {
+      const signupRes = await fetch(`${BACKEND_URL}/api/users/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        console.error('Signup error:', data);
-        throw new Error(data.detail || JSON.stringify(data));
+      const signupData = await signupRes.json();
+
+      if (!signupRes.ok) {
+        console.error('Signup error:', signupData);
+        const errMsg =
+          signupData.detail ||
+          signupData.message ||
+          JSON.stringify(signupData) ||
+          'Signup failed';
+        throw new Error(errMsg);
       }
 
-      // ---- LOGIN REQUEST ----
-      const loginRes = await fetch(`${BACKEND_URL}/api/users/login/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-
-        body: JSON.stringify({
-  username: formData.username || formData.email,
-  password: formData.password,
-}),
-
-
-      });
-
-      const loginData = await loginRes.json();
-      if (!loginRes.ok) {
-        console.error('Login error:', loginData);
-        throw new Error(loginData.detail || JSON.stringify(loginData));
-      }
-
-      // ---- STORE TOKENS ----
-      localStorage.setItem('access_token', loginData.access);
-      localStorage.setItem('refresh_token', loginData.refresh);
-      localStorage.setItem('user', JSON.stringify(loginData.user));
-
-      // notify app contexts
+      // ✅ Signup succeeded — backend already returned tokens
+      localStorage.setItem('t_office_access', signupData.access);
+      localStorage.setItem('t_office_refresh', signupData.refresh);
+      localStorage.setItem('t_office_user', JSON.stringify(signupData.user));
       window.dispatchEvent(new Event('t_office_auth_changed'));
-
       navigate('/dashboard');
-      return;
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
+      else setError('Unexpected error occurred.');
     } finally {
       setLoading(false);
     }
@@ -339,10 +322,7 @@ export default function SignupPage() {
 
                 {purposeOfUse.includes('other') && (
                   <div>
-                    <label
-                      htmlFor="customPurpose"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
+                    <label htmlFor="customPurpose" className="block text-sm font-medium text-gray-700 mb-2">
                       Please specify
                     </label>
                     <input
@@ -361,10 +341,8 @@ export default function SignupPage() {
                   type="submit"
                   disabled={
                     loading ||
-                    purposeOfUse.length === 0 ||
-                    (purposeOfUse.includes('other') &&
-                      purposeOfUse.length === 1 &&
-                      !customPurpose)
+                    !purposeOfUse.length ||
+                    (purposeOfUse.includes('other') && !customPurpose)
                   }
                   className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
