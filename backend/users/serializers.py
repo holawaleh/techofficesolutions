@@ -74,18 +74,16 @@ class SignupSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        # Extract optional field safely
         purpose_of_use = validated_data.pop("purpose_of_use", [])
 
-        # Public signups = super accounts
         validated_data["is_superuser"] = True
         validated_data["is_staff"] = True
 
         user = User.objects.create_user(**validated_data)
 
-        if hasattr(user, "purpose_of_use"):
-            user.purpose_of_use = purpose_of_use
-            user.save()
+        # ✅ Ensure the JSON field is committed immediately
+        user.purpose_of_use = purpose_of_use
+        user.save(update_fields=["purpose_of_use"])
 
         refresh = RefreshToken.for_user(user)
 
@@ -99,14 +97,15 @@ class SignupSerializer(serializers.ModelSerializer):
                 "company_name": user.company_name,
                 "address": user.address,
                 "phone_number": user.phone_number,
-                "purpose_of_use": getattr(user, "purpose_of_use", []),
+                "purpose_of_use": user.purpose_of_use,
                 "is_superuser": user.is_superuser,
                 "is_staff": user.is_staff,
             },
         }
 
     def to_representation(self, instance):
-        return instance
+        # ✅ Prevent overwriting token dict with user object
+        return instance if isinstance(instance, dict) else super().to_representation(instance)
 
 
 # ----------------------------
