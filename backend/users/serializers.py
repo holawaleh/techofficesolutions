@@ -49,9 +49,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         }
 
 
-# ----------------------------
-# 🔹 SIGNUP SERIALIZER
-# ----------------------------
 class SignupSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     purpose_of_use = serializers.ListField(
@@ -81,12 +78,13 @@ class SignupSerializer(serializers.ModelSerializer):
 
         user = User.objects.create_user(**validated_data)
 
-        # ✅ Ensure the JSON field is committed immediately
+        # ✅ Commit JSON field immediately
         user.purpose_of_use = purpose_of_use
         user.save(update_fields=["purpose_of_use"])
 
         refresh = RefreshToken.for_user(user)
 
+        # ✅ Return token + user data dict
         return {
             "refresh": str(refresh),
             "access": str(refresh.access_token),
@@ -103,12 +101,13 @@ class SignupSerializer(serializers.ModelSerializer):
             },
         }
 
-def to_representation(self, instance):
-    # If instance is already our token dict, just return it
-    if isinstance(instance, dict):
-        return instance
-    # Otherwise, fall back to normal DRF behavior
-    return super().to_representation(instance)
+    def to_representation(self, instance):
+        """
+        Prevent DRF from overwriting our custom create() return dict.
+        """
+        if isinstance(instance, dict):
+            return instance
+        return super().to_representation(instance)
 
 
 # ----------------------------
