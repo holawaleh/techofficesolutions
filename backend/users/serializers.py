@@ -103,9 +103,12 @@ class SignupSerializer(serializers.ModelSerializer):
             },
         }
 
-    def to_representation(self, instance):
-        # ✅ Prevent overwriting token dict with user object
-        return instance if isinstance(instance, dict) else super().to_representation(instance)
+def to_representation(self, instance):
+    # If instance is already our token dict, just return it
+    if isinstance(instance, dict):
+        return instance
+    # Otherwise, fall back to normal DRF behavior
+    return super().to_representation(instance)
 
 
 # ----------------------------
