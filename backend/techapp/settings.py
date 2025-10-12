@@ -64,7 +64,7 @@ MIDDLEWARE = [
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),   # default is 5 minutes
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),   # default is 5 minutes
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),     # default is 1 day
     "ROTATE_REFRESH_TOKENS": True,                    # optional: rotate tokens when refreshing
     "BLACKLIST_AFTER_ROTATION": True,                 # optional: blacklist old tokens
