@@ -1,69 +1,66 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AuthService } from '../services/authService';
-import type { User, LoginPayload, SignupPayload } from '../types/auth';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { loginUser, refreshToken } from "../types/auth";
 
-export interface AuthContextType {
-  user: User | null;
-  profile: User | null;              // alias for convenience
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
-  signup: (payload: SignupPayload) => Promise<void>;
-  logout: () => void;
-  signOut: () => void;               // alias for convenience
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  company_name: string;
+  address: string;
+  phone_number: string;
+  purpose_of_use: string[];
+  is_superuser: boolean;
+  is_staff: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextType {
+  user: User | null;
+  accessToken: string | null;
+  login: (data: { username: string; password: string }) => Promise<void>;
+  logout: () => void;
+}
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const currentUser = AuthService.getCurrentUser();
-    setUser(currentUser);
-    setIsLoading(false);
+    const storedUser = localStorage.getItem("user");
+    const storedAccess = localStorage.getItem("access");
+    if (storedUser && storedAccess) {
+      setUser(JSON.parse(storedUser));
+      setAccessToken(storedAccess);
+    }
   }, []);
 
-  const login = async (payload: LoginPayload) => {
-    const response = await AuthService.login(payload);
-    setUser(response.user);
-  };
+  const login = async ({ username, password }: { username: string; password: string }) => {
+    const data = await loginUser({ username, password });
 
-  const signup = async (payload: SignupPayload) => {
-    const response = await AuthService.signup(payload);
-    setUser(response.user);
+    localStorage.setItem("access", data.access);
+    localStorage.setItem("refresh", data.refresh);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    setAccessToken(data.access);
+    setUser(data.user);
   };
 
   const logout = () => {
-    AuthService.logout();
+    localStorage.clear();
+    setAccessToken(null);
     setUser(null);
   };
 
-  // ✅ Aliases for backward compatibility
-  const profile = user;
-  const signOut = logout;
-
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        signup,
-        logout,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={{ user, accessToken, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
-}
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
+};

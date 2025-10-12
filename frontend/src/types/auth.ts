@@ -1,50 +1,42 @@
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  company_name: string;
-  address: string;
-  phone_number: string;
-  areas_of_interest?: string[];
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://techofficesolutions.onrender.com";
 
-  // ✅ Added fields to match backend & Dashboard.tsx usage
-  company_id?: string;
-  telephone?: string;
-  is_superuser?: boolean;
-  is_staff?: boolean;
-  is_admin?: boolean;
-  role?: string;
-  created_at?: string;
-  updated_at?: string;
+export async function loginUser(credentials: { username: string; password: string }) {
+  const response = await fetch(`${BASE_URL}/api/users/login/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(credentials),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.detail || "Login failed. Check credentials.");
+  }
+
+  return response.json();
 }
 
-export interface LoginPayload {
-  username: string;
-  password: string;
+export async function signupUser(data: Record<string, any>) {
+  const response = await fetch(`${BASE_URL}/api/users/signup/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(JSON.stringify(err));
+  }
+
+  return response.json();
 }
 
-export interface SignupPayload {
-  username: string;
-  email: string;
-  password: string;
-  company_name: string;
-  address: string;
-  phone_number: string;
-  areas_of_interest?: string[];
-}
+export async function refreshToken(refresh: string) {
+  const response = await fetch(`${BASE_URL}/api/users/token/refresh/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh }),
+  });
 
-export interface AuthResponse {
-  refresh: string;
-  access: string;
-  user: User;
-}
-
-export interface StaffMember {
-  id: number;
-  username: string;
-  email: string;
-  can_edit: boolean;
-  can_delete: boolean;
-  special_privileges: string[];
-  created_at: string;
+  if (!response.ok) throw new Error("Token refresh failed");
+  return response.json();
 }
