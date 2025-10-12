@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { loginUser, refreshToken } from "../types/auth";
+import { loginUser, signupUser } from "../services/auth";
+import type { LoginData, SignupData } from "../types/auth";
 
 interface User {
   id: number;
@@ -13,10 +14,11 @@ interface User {
   is_staff: boolean;
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   accessToken: string | null;
-  login: (data: { username: string; password: string }) => Promise<void>;
+  login: (data: LoginData) => Promise<void>;
+  signup: (data: SignupData) => Promise<void>;
   logout: () => void;
 }
 
@@ -26,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
+  // Restore from localStorage on refresh
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedAccess = localStorage.getItem("access");
@@ -35,17 +38,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async ({ username, password }: { username: string; password: string }) => {
-    const data = await loginUser({ username, password });
-
-    localStorage.setItem("access", data.access);
-    localStorage.setItem("refresh", data.refresh);
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    setAccessToken(data.access);
-    setUser(data.user);
+  // 🔹 LOGIN
+  const login = async (data: LoginData) => {
+    const res = await loginUser(data);
+    localStorage.setItem("access", res.access);
+    localStorage.setItem("refresh", res.refresh);
+    localStorage.setItem("user", JSON.stringify(res.user));
+    setAccessToken(res.access);
+    setUser(res.user);
   };
 
+  // 🔹 SIGNUP
+  const signup = async (data: SignupData) => {
+    const res = await signupUser(data);
+    localStorage.setItem("access", res.access);
+    localStorage.setItem("refresh", res.refresh);
+    localStorage.setItem("user", JSON.stringify(res.user));
+    setAccessToken(res.access);
+    setUser(res.user);
+  };
+
+  // 🔹 LOGOUT
   const logout = () => {
     localStorage.clear();
     setAccessToken(null);
@@ -53,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout }}>
+    <AuthContext.Provider value={{ user, accessToken, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

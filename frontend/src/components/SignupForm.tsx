@@ -69,7 +69,7 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
       <div className="space-y-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-slate-900">Select Your Interests</h2>
-          <p className="text-slate-600 mt-2">Choose the areas relevant to your business</p>
+          <p className="text-slate-900 mt-2">Choose the areas relevant to your business</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
