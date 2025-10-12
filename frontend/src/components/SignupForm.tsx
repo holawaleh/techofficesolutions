@@ -1,35 +1,37 @@
-import { useState } from 'react';
-import { UserPlus, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from "react";
+import { UserPlus, Loader2, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
 }
 
 const AREAS_OF_INTEREST = [
-  { id: 'hospitality', label: 'Hospitality', icon: '🏨' },
-  { id: 'commerce', label: 'Commerce', icon: '🛍️' },
-  { id: 'tourism', label: 'Tourism', icon: '✈️' },
-  { id: 'health', label: 'Health', icon: '🏥' },
-  { id: 'agriculture', label: 'Agriculture', icon: '🌾' },
-  { id: 'others', label: 'Others', icon: '📋' },
+  { id: "hospitality", label: "Hospitality", icon: "🏨" },
+  { id: "commerce", label: "Commerce", icon: "🛍️" },
+  { id: "tourism", label: "Tourism", icon: "✈️" },
+  { id: "health", label: "Health", icon: "🏥" },
+  { id: "agriculture", label: "Agriculture", icon: "🌾" },
+  { id: "others", label: "Others", icon: "📋" },
 ];
 
 export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const { signup } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    company_name: '',
-    address: '',
-    phone_number: '',
+    username: "",
+    email: "",
+    password: "",
+    company_name: "",
+    address: "",
+    phone_number: "",
     areas_of_interest: [] as string[],
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
+  // ✅ Toggle interest selection
   const handleAreaToggle = (areaId: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -39,37 +41,40 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     }));
   };
 
+  // ✅ Move to step 2
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
     setStep(2);
   };
 
+  // ✅ Submit signup form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.areas_of_interest.length === 0) {
-      setError('Please select at least one area of interest');
+      setError("Please select at least one area of interest");
       return;
     }
 
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       await signup(formData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed');
+      setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ✅ Step 2 — Interests
   if (step === 2) {
     return (
       <div className="space-y-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-slate-900">Select Your Interests</h2>
-          <p className="text-slate-900 mt-2">Choose the areas relevant to your business</p>
+          <p className="text-slate-600 mt-2">Choose the areas relevant to your business</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -87,8 +92,8 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 onClick={() => handleAreaToggle(area.id)}
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
                   formData.areas_of_interest.includes(area.id)
-                    ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    ? "border-emerald-500 bg-emerald-50"
+                    : "border-slate-200 hover:border-slate-300 bg-white"
                 }`}
               >
                 <div className="text-2xl mb-2">{area.icon}</div>
@@ -138,6 +143,7 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     );
   }
 
+  // ✅ Step 1 — Basic Info + Password Toggle
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -223,19 +229,27 @@ export default function SignupForm({ onSwitchToLogin }: SignupFormProps) {
           />
         </div>
 
-        <div>
+        {/* ✅ Password with Eye Toggle */}
+        <div className="relative">
           <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
             Password
           </label>
           <input
             id="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             required
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all pr-10"
             placeholder="Create a strong password"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-emerald-500 transition-colors"
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
         </div>
 
         <button

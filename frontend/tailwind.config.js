@@ -7,22 +7,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#059669", // emerald-600
-          light: "#10B981",   // emerald-500
-          dark: "#047857",    // emerald-700
+        background: {
+          dark: "#0f172a", // deep navy
+          surface: "#1e293b", // for cards or panels
         },
         text: {
-          light: "#F8FAFC",
-          DEFAULT: "#1E293B",
-          subtle: "#475569",
+          primary: "#f8fafc", // bright white
+          secondary: "#cbd5e1", // softer gray-blue
+          muted: "#94a3b8", // placeholder/subtle
         },
-      },
-      fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-      },
-      boxShadow: {
-        glow: "0 0 25px rgba(16, 185, 129, 0.4)", // emerald glow
+        primary: {
+          DEFAULT: "#10b981", // emerald
+          dark: "#059669",
+        },
       },
     },
   },
