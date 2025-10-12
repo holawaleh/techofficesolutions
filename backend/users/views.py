@@ -1,22 +1,13 @@
-from rest_framework import generics, permissions
-from django.contrib.auth import get_user_model
-from .serializers import SignupSerializer, StaffCreateSerializer, CustomTokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView  
-
-User = get_user_model()
-
+from rest_framework import generics, status
+from rest_framework.response import Response
+from .serializers import SignupSerializer
 
 class SignupView(generics.CreateAPIView):
-    queryset = User.objects.all()
     serializer_class = SignupSerializer
-    permission_classes = [permissions.AllowAny]
 
-
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
-
-
-class StaffCreateView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    serializer_class = StaffCreateSerializer
-    permission_classes = [permissions.IsAdminUser]  # only superuser/staff
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Signup successful! Superuser and organization created."},
+                        status=status.HTTP_201_CREATED)
