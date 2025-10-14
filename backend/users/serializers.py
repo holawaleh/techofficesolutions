@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from organizations.models import Organization
+from organizations.models import Organization, Membership
+
+# from .serializers import UserSignupSerializer
 
 User = get_user_model()
 

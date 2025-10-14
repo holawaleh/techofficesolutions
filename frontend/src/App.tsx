@@ -4,6 +4,8 @@ import LandingPage from "./components/LandingPage";
 import Dashboard from "./components/Dashboard";
 import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
+import ChoosePreferencesPage from "./pages/ChoosePreferencesPage";
+
 
 
 export default function App() {
@@ -26,6 +28,8 @@ export default function App() {
       {/* Landing page */}
       <Route path="/" element={<LandingPage />} />
 
+      <Route path="/choose-preferences" element={<ChoosePreferencesPage />} />
+
       {/* Auth pages */}
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -40,3 +44,5 @@ export default function App() {
     </Routes>
   );
 }
+
+

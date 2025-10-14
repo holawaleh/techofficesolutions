@@ -1,55 +1,67 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-interface AuthContextType {
-  user: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (username: string) => void;
-  logout: () => void;
-}
+const AuthContext = createContext<any>(null);
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<string | null>(null);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
 
-  // Simulate loading or token check (you’ll connect it to real JWT later)
+  const backend = import.meta.env.VITE_BACKEND_URL;
+
+  // ---- SIGNUP ----
+  const signup = async (formData: any) => {
+    try {
+      const res = await axios.post(`${backend}/api/users/signup/`, formData);
+      if (res.status === 201) {
+        alert("Signup successful! Please log in.");
+        navigate("/login");
+      }
+    } catch (err: any) {
+      console.error(err.response?.data || err.message);
+      alert("Signup failed — check your info and try again.");
+    }
+  };
+
+  // ---- LOGIN ----
+  const login = async (credentials: any) => {
+    try {
+      const res = await axios.post(`${backend}/api/token/`, credentials);
+      localStorage.setItem("access", res.data.access);
+      localStorage.setItem("refresh", res.data.refresh);
+      setIsAuthenticated(true);
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error(err.response?.data || err.message);
+      alert("Invalid credentials.");
+    }
+  };
+
+  // ---- LOGOUT ----
+  const logout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    setIsAuthenticated(false);
+    navigate("/login");
+  };
+
+  // ---- AUTO LOGIN ----
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) setUser(savedUser);
+    const token = localStorage.getItem("access");
+    if (token) setIsAuthenticated(true);
     setIsLoading(false);
   }, []);
 
-  const login = (username: string) => {
-    setUser(username);
-    localStorage.setItem("user", username);
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("user");
-  };
-
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout,
-      }}
+      value={{ user, signup, login, logout, isAuthenticated, isLoading }}
     >
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
+export const useAuth = () => useContext(AuthContext);

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 
 class Organization(models.Model):
@@ -19,11 +20,11 @@ class Organization(models.Model):
     ]
 
     name = models.CharField(max_length=150)
-    preference = models.CharField(
-        max_length=50,
-        choices=PREFERENCES,
-        default="other"
-    )
+    preference = ArrayField(
+    models.CharField(max_length=50,         choices=PREFERENCES),
+    default=list,
+    blank=True
+)
     owner = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

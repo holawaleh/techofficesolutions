@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import StaffCreateSerializer
 from .models import Membership
+from users.models import User
 
 
 class AddStaffView(generics.CreateAPIView):
@@ -49,3 +50,21 @@ class OrganizationProfileView(APIView):
             "owner": org.owner.username,
             "created_at": org.created_at,
         })
+class SetPreferencesView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        preferences = request.data.get("preferences", [])
+        email = request.data.get("user_email")
+
+        if not email or not preferences:
+            return Response({"detail": "Email and preferences required."}, status=400)
+
+        try:
+            user = User.objects.get(email=email)
+            org = user.current_org
+            org.preference = preferences
+            org.save()
+            return Response({"message": "Preferences saved successfully."}, status=200)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found."}, status=404)
