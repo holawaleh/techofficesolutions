@@ -5,6 +5,7 @@ import Dashboard from "./components/Dashboard";
 import SignupPage from "./pages/SignupPage";
 import LoginPage from "./pages/LoginPage";
 import ChoosePreferencesPage from "./pages/ChoosePreferencesPage";
+import SettingsPage from "./pages/SettingsPage";
 
 
 
@@ -27,6 +28,13 @@ export default function App() {
     <Routes>
       {/* Landing page */}
       <Route path="/" element={<LandingPage />} />
+
+      <Route
+  path="/dashboard/settings"
+  element={
+    isAuthenticated ? <SettingsPage /> : <Navigate to="/login" replace />
+  }
+/>
 
       <Route path="/choose-preferences" element={<ChoosePreferencesPage />} />
 

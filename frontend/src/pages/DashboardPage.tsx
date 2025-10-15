@@ -1,21 +1,65 @@
-// src/pages/DashboardPage.tsx
-import DashboardLayout from "@/layouts/DashboardLayout";
-import DashboardCard from "@/components/DashboardCard";
-import { DollarSign, Package, ClipboardList, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import api from "../api";
 
-export default function DashboardPage() {
+export default function Dashboard() {
+  const [org, setOrg] = useState<{ name: string; preference: string[] }>({
+    name: "",
+    preference: [],
+  });
+
+  useEffect(() => {
+    const fetchOrgProfile = async () => {
+      try {
+        const res = await api.get("/api/organizations/profile/");
+        setOrg(res.data);
+      } catch (err) {
+        console.error("Failed to load organization profile:", err);
+      }
+    };
+    fetchOrgProfile();
+  }, []);
+
   return (
-    <DashboardLayout>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-        <DashboardCard title="Today's Sales" value="₦145,000" icon={<DollarSign />} />
-        <DashboardCard title="Low Stock Items" value="12" icon={<Package />} />
-        <DashboardCard title="Pending Orders" value="7" icon={<ClipboardList />} />
-        <DashboardCard title="Active Staff" value="5" icon={<Users />} />
+    <div className="min-h-screen bg-slate-900 text-white p-8">
+      <header className="flex justify-between items-center mb-10">
+        <h1 className="text-2xl font-bold text-emerald-400">
+          {org.name || "Loading..."}
+        </h1>
+        <span className="text-slate-400 text-sm">
+          {org.preference.length > 0
+            ? `Industry: ${org.preference.join(", ")}`
+            : "No preferences set"}
+        </span>
+      </header>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <DashboardCard title="Today's Sales" value="₦145,000" icon="$" />
+        <DashboardCard title="Low Stock Items" value="12" icon="📦" />
+        <DashboardCard title="Pending Orders" value="7" icon="🧾" />
+        <DashboardCard title="Active Staff" value="5" icon="👥" />
       </div>
 
-      <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-md border border-white/10">
-        <p className="text-gray-300">📈 Sales chart placeholder (we’ll integrate Recharts later)</p>
+      <div className="mt-8 bg-slate-800 p-6 rounded-lg text-slate-300 text-center">
+        Sales chart placeholder (we’ll integrate Recharts later)
       </div>
-    </DashboardLayout>
+    </div>
+  );
+}
+
+function DashboardCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string;
+  icon: string;
+}) {
+  return (
+    <div className="bg-slate-800 rounded-xl p-6 flex flex-col justify-center items-center shadow-lg hover:bg-slate-700 transition">
+      <span className="text-3xl mb-2">{icon}</span>
+      <h3 className="text-slate-400 text-sm">{title}</h3>
+      <p className="text-2xl font-bold mt-1">{value}</p>
+    </div>
   );
 }
