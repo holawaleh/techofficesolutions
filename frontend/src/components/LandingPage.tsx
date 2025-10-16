@@ -1,111 +1,90 @@
 import { useNavigate } from "react-router-dom";
-import {
-  Building2,
-  ShoppingBag,
-  Plane,
-  HeartPulse,
-  Leaf,
-  Wrench,
-} from "lucide-react";
+import { Building2, ShoppingBag, Plane, HeartPulse, Leaf, Wrench } from "lucide-react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
 
+  const handleSignup = () => navigate("/signup");
+  const handleSignin = () => navigate("/login");
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white font-inter">
+    <div className="min-h-screen bg-slate-900 text-white">
       {/* HERO SECTION */}
-      <section className="text-center py-20 px-6">
-        <h2 className="text-4xl md:text-6xl font-bold mb-4">
-          Enterprise Solutions for{" "}
-          <span className="text-emerald-400">Every Industry</span>
-        </h2>
-        <p className="text-slate-300 max-w-2xl mx-auto text-lg">
+      <header className="text-center py-20 bg-gradient-to-b from-slate-900 to-slate-800">
+        <h1 className="text-4xl md:text-5xl font-bold">
+          FlexBizPro by{" "}
+          <span className="text-emerald-400">Tech Affairs</span>
+        </h1>
+        <p className="mt-4 text-slate-300 max-w-2xl mx-auto">
           Comprehensive monitoring and management platform tailored for
           hospitality, commerce, tourism, health, agriculture, and technical
           services.
         </p>
 
-        <button
-          onClick={() => navigate("/signup")}
-          className="mt-10 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-lg text-lg font-semibold shadow-lg transition-transform hover:scale-105"
-        >
-          Sign Up Here
-        </button>
-      </section>
+        <div className="flex justify-center gap-4 mt-8">
+          <button
+            onClick={handleSignup}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold"
+          >
+            Sign Up Here
+          </button>
+          <button
+            onClick={handleSignin}
+            className="border border-emerald-400 hover:bg-emerald-500/10 text-emerald-300 px-6 py-2 rounded-lg font-semibold"
+          >
+            Sign In
+          </button>
+        </div>
+      </header>
 
       {/* INDUSTRIES SECTION */}
-      <section className="py-20 px-8 text-center">
-        <h3 className="text-3xl font-semibold mb-12 text-emerald-400">
+      <section className="py-16 text-center">
+        <h2 className="text-2xl font-semibold text-emerald-400 mb-10">
           Industries We Empower
-        </h3>
+        </h2>
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 max-w-6xl mx-auto">
-          <IndustryCard
-            icon={<Building2 />}
-            name="Hospitality"
-            desc="Streamline bookings, reservations, and guest experiences."
-          />
-          <IndustryCard
-            icon={<ShoppingBag />}
-            name="Commerce"
-            desc="Manage inventory, sales, and customer transactions efficiently."
-          />
-          <IndustryCard
-            icon={<Plane />}
-            name="Tourism"
-            desc="Simplify tour scheduling, client management, and bookings."
-          />
-          <IndustryCard
-            icon={<HeartPulse />}
-            name="Health"
-            desc="Organize patient records, prescriptions, and clinical reports."
-          />
-          <IndustryCard
-            icon={<Leaf />}
-            name="Agriculture"
-            desc="Track yields, resources, and production cycles with ease."
-          />
-          <IndustryCard
-            icon={<Wrench />}
-            name="Technical Services"
-            desc="Manage repairs, maintenance, and field service operations."
-          />
+        <div className="flex flex-wrap justify-center gap-6 px-4">
+          {[
+            { icon: <Building2 />, title: "Hospitality", desc: "Streamline bookings and guest experiences." },
+            { icon: <ShoppingBag />, title: "Commerce", desc: "Manage inventory and sales efficiently." },
+            { icon: <Plane />, title: "Tourism", desc: "Simplify tour scheduling and client management." },
+            { icon: <HeartPulse />, title: "Health", desc: "Organize patient records and prescriptions." },
+            { icon: <Leaf />, title: "Agriculture", desc: "Track yields, inputs, and production cycles." },
+            { icon: <Wrench />, title: "Technical Services", desc: "Manage repairs and maintenance operations." },
+          ].map(({ icon, title, desc }) => (
+            <div
+              key={title}
+              className="bg-slate-800/80 p-6 rounded-lg w-52 hover:bg-slate-700/70 transition"
+            >
+              <div className="text-emerald-400 mx-auto mb-3">{icon}</div>
+              <h3 className="font-semibold">{title}</h3>
+              <p className="text-sm text-slate-400 mt-2">{desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* CTA SECTION */}
-      <section className="bg-gradient-to-r from-emerald-500 to-teal-500 py-16 text-center text-white">
-        <h3 className="text-3xl font-bold mb-4">
+      {/* FOOTER CTA */}
+      <footer className="bg-emerald-600/90 py-16 text-center">
+        <h3 className="text-xl font-semibold text-white">
           Ready to Transform Your Business?
         </h3>
-        <p className="text-lg mb-8">
-          Join thousands of businesses already using Enterprise Hub.
+        <p className="mt-2 text-slate-100">
+          Join thousands of businesses already using FlexBisPro.
         </p>
         <button
-          onClick={() => navigate("/signup")}
-          className="bg-white text-emerald-600 px-8 py-3 rounded-lg font-semibold hover:bg-slate-100 transition"
+          onClick={handleSignup}
+          className="mt-6 bg-white text-emerald-600 hover:bg-slate-100 px-6 py-2 rounded-lg font-semibold"
         >
           Sign Up Here
         </button>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="bg-slate-950 py-6 text-center text-slate-400 text-sm">
-        <p>© 2025 Enterprise Hub. All rights reserved.</p>
-        <p className="mt-1">
-          Made by <span className="text-emerald-400">techaffairs</span>
-        </p>
       </footer>
-    </div>
-  );
-}
 
-function IndustryCard({ icon, name, desc }: any) {
-  return (
-    <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 hover:border-emerald-400 hover:shadow-lg transition hover:scale-105">
-      <div className="flex justify-center text-emerald-400 mb-3">{icon}</div>
-      <h5 className="font-semibold text-lg mb-2">{name}</h5>
-      <p className="text-slate-400 text-sm">{desc}</p>
+      {/* FOOTER COPYRIGHT */}
+      <div className="bg-slate-950 text-slate-400 py-6 text-center text-sm">
+        © 2025 <span className="text-emerald-400">FlexBisPro</span>. All rights reserved. <br />
+        Made by <span className="text-emerald-400">techaffairs</span>
+      </div>
     </div>
   );
 }
